@@ -1,0 +1,256 @@
+{
+ "firmware": "ArduCopter 4.7.1",
+ "source_file": "copter-4.7.1.pdef.xml",
+ "extracted": "2026-10-28",
+ "parameters": {
+  "FS_THR_ENABLE": {
+   "humanName": "Throttle Failsafe Enable",
+   "documentation": "The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel",
+   "values": {
+    "0": "Disabled",
+    "1": "Enabled always RTL",
+    "2": "Enabled Continue with Mission in Auto Mode (Removed in 4.0+)",
+    "3": "Enabled always Land",
+    "4": "Enabled always SmartRTL or RTL",
+    "5": "Enabled always SmartRTL or Land",
+    "6": "Enabled Auto DO_LAND_START/DO_RETURN_PATH_START or RTL",
+    "7": "Enabled always Brake or Land"
+   }
+  },
+  "PILOT_SPD_UP": {
+   "humanName": "Pilot maximum vertical speed ascending",
+   "documentation": "The maximum vertical ascending velocity the pilot may request in m/s",
+   "Units": "m/s",
+   "UnitText": "meters per second",
+   "Range": "0.5 5",
+   "Increment": "0.1"
+  },
+  "PILOT_SPD_DN": {
+   "humanName": "Pilot maximum vertical speed descending",
+   "documentation": "The maximum vertical descending velocity the pilot may request in m/s.  If 0 PILOT_SPD_UP value is used.",
+   "Units": "m/s",
+   "UnitText": "meters per second",
+   "Range": "0 5",
+   "Increment": "0.1"
+  },
+  "ARMING_SKIPCHK": {
+   "humanName": "Arm Checks to Skip (bitmask)",
+   "documentation": "Checks to skip prior to arming motor. This is a bitmask of checks before allowing arming that will be skipped. For most users it is recommended to leave this at the default of 0 (no checks skipped). In extreme circumstances, a value of -1 can be used to skip all non-mandatory current and future checks.",
+   "Bitmask": "1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT"
+  },
+  "ATC_ANGLE_MAX": {
+   "humanName": "Angle Max",
+   "documentation": "Maximum lean angle in all flight modes",
+   "Units": "deg",
+   "UnitText": "degrees",
+   "Increment": "0.1",
+   "Range": "10.0 80.0"
+  },
+  "BATT_LOW_VOLT": {
+   "humanName": "Low battery voltage",
+   "documentation": "Battery voltage that triggers a low battery failsafe. Set to 0 to disable. If the battery voltage drops below this voltage continuously for more then the period specified by the BATT_LOW_TIMER parameter then the vehicle will perform the failsafe specified by the BATT_FS_LOW_ACT parameter.",
+   "Units": "V",
+   "UnitText": "volt",
+   "Increment": "0.1"
+  },
+  "CIRCLE_RADIUS_M": {
+   "humanName": "Circle Radius",
+   "documentation": "Radius of the circle the vehicle will fly when in Circle flight mode",
+   "Units": "m",
+   "UnitText": "meters",
+   "Range": "0 2000",
+   "Increment": "1"
+  },
+  "COMPASS_ENABLE": {
+   "humanName": "Enable Compass",
+   "documentation": "Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.",
+   "RebootRequired": "True",
+   "values": {
+    "0": "Disabled",
+    "1": "Enabled"
+   }
+  },
+  "EK3_GLITCH_RAD": {
+   "humanName": "GPS glitch radius gate size (m)",
+   "documentation": "This controls the maximum radial uncertainty in position between the value predicted by the filter and the value measured by the GPS before the filter position and velocity states are reset to the GPS. Making this value larger allows the filter to ignore larger GPS glitches but also means that non-GPS errors such as IMU and compass can create a larger error in position before the filter is forced back to the GPS position. If EK3_GLITCH_RAD set to 0 the GPS innovations will be clipped instead of rejected if they exceed the gate size set by EK3_VEL_I_GATE and EK3_POS_I_GATE which can be useful if poor quality sensor data is causing GPS rejection and loss of navigation but does make the EKF more susceptible to GPS glitches. If setting EK3_GLITCH_RAD to 0 it is recommended to reduce EK3_VEL_I_GATE and EK3_POS_I_GATE to 300.",
+   "Range": "10 100",
+   "Increment": "5",
+   "Units": "m",
+   "UnitText": "meters"
+  },
+  "FENCE_ENABLE": {
+   "humanName": "Fence enable/disable",
+   "documentation": "Allows you to enable (1) or disable (0) the fence functionality. Fences can still be enabled and disabled via mavlink or an RC option, but these changes are not persisted.",
+   "values": {
+    "0": "Disabled",
+    "1": "Enabled"
+   }
+  },
+  "FENCE_ACTION": {
+   "humanName": "Fence Action",
+   "documentation": "What action should be taken when fence is breached",
+   "values": {
+    "0": "Report Only",
+    "1": "RTL or Land",
+    "2": "Always Land",
+    "3": "SmartRTL or RTL or Land",
+    "4": "Brake or Land",
+    "5": "SmartRTL or Land"
+   }
+  },
+  "FENCE_ALT_MAX": {
+   "humanName": "Fence Maximum Altitude",
+   "documentation": "Maximum altitude allowed before geofence triggers. See FENCE_ALT_MAX_TP for reference frame.",
+   "Units": "m",
+   "UnitText": "meters",
+   "Range": "10 1000",
+   "Increment": "1"
+  },
+  "FENCE_ALT_MAX_TP": {
+   "humanName": "Altitude max frame type",
+   "documentation": "The altitude reference frame for the maximum altitude fence. Can be AMSL, home-relative, origin relative or AGL.",
+   "values": {
+    "0": "Above sea level",
+    "1": "Above Home",
+    "2": "Above Origin",
+    "3": "Above Terrain"
+   }
+  },
+  "GPS_AUTO_CONFIG": {
+   "humanName": "Automatic GPS configuration",
+   "documentation": "Controls if the autopilot should automatically configure the GPS based on the parameters and default settings",
+   "values": {
+    "0": "Disables automatic configuration",
+    "1": "Enable automatic configuration for Serial GPSes only",
+    "2": "Enable automatic configuration for DroneCAN as well",
+    "3": "Clear all configurations not set by ardupilot (UBlox only)"
+   }
+  },
+  "GPS_TYPE": {
+   "humanName": "1st GPS type",
+   "documentation": "GPS type of 1st GPS.Renamed in 4.6 and later to GPS1_TYPE",
+   "RebootRequired": "True",
+   "values": {
+    "0": "None",
+    "1": "AUTO",
+    "2": "uBlox",
+    "5": "NMEA",
+    "6": "SiRF",
+    "7": "HIL",
+    "8": "SwiftNav",
+    "9": "DroneCAN",
+    "10": "SBF",
+    "11": "GSOF",
+    "13": "ERB",
+    "14": "MAV",
+    "15": "NOVA",
+    "16": "HemisphereNMEA",
+    "17": "uBlox-MovingBaseline-Base",
+    "18": "uBlox-MovingBaseline-Rover",
+    "19": "MSP",
+    "20": "AllyStar",
+    "21": "ExternalAHRS",
+    "22": "DroneCAN-MovingBaseline-Base",
+    "23": "DroneCAN-MovingBaseline-Rover",
+    "24": "UnicoreNMEA",
+    "25": "UnicoreMovingBaselineNMEA",
+    "26": "SBF-DualAntenna"
+   }
+  },
+  "GPS1_TYPE": {
+   "humanName": "GPS type",
+   "documentation": "GPS type",
+   "RebootRequired": "True",
+   "values": {
+    "0": "None",
+    "1": "AUTO",
+    "2": "uBlox",
+    "5": "NMEA",
+    "6": "SiRF",
+    "7": "HIL",
+    "8": "SwiftNav",
+    "9": "DroneCAN",
+    "10": "Septentrio(SBF)",
+    "11": "Trimble(GSOF)",
+    "13": "ERB",
+    "14": "MAVLink",
+    "15": "NOVA",
+    "16": "HemisphereNMEA",
+    "17": "uBlox-MovingBaseline-Base",
+    "18": "uBlox-MovingBaseline-Rover",
+    "19": "MSP",
+    "20": "AllyStar",
+    "21": "ExternalAHRS",
+    "22": "DroneCAN-MovingBaseline-Base",
+    "23": "DroneCAN-MovingBaseline-Rover",
+    "24": "UnicoreNMEA",
+    "25": "UnicoreMovingBaselineNMEA",
+    "26": "Septentrio-DualAntenna(SBF)"
+   }
+  },
+  "LAND_SPD_MS": {
+   "humanName": "Land speed",
+   "documentation": "The descent speed for the final stage of landing in m/s",
+   "Units": "m/s",
+   "UnitText": "meters per second",
+   "Range": "0.3 2",
+   "Increment": "0.1"
+  },
+  "LOIT_SPEED_MS": {
+   "humanName": "Loiter Horizontal Maximum Speed",
+   "documentation": "Defines the maximum speed in m/s which the aircraft will travel horizontally while in loiter mode",
+   "Units": "m/s",
+   "UnitText": "meters per second",
+   "Range": "0.20 35",
+   "Increment": "0.05"
+  },
+  "RTL_ALT_M": {
+   "humanName": "RTL Altitude",
+   "documentation": "The minimum alt above home the vehicle will climb to before returning. If the vehicle is flying higher than this value it will return at its current altitude.",
+   "Units": "m",
+   "UnitText": "meters",
+   "Range": "0.30 3000",
+   "Increment": "0.1"
+  },
+  "RTL_CLIMB_MIN_M": {
+   "humanName": "RTL minimum climb",
+   "documentation": "The vehicle will climb this many meters during the initial climb portion of the RTL",
+   "Units": "m",
+   "UnitText": "meters",
+   "Range": "0 30",
+   "Increment": "0.1"
+  },
+  "WP_SPD": {
+   "humanName": "Waypoint Horizontal Speed Target",
+   "documentation": "Speed in m/s which the aircraft will attempt to maintain horizontally during a WP mission",
+   "Units": "m/s",
+   "UnitText": "meters per second",
+   "Range": "0.10 20.00",
+   "Increment": "0.10"
+  },
+  "WP_RADIUS_M": {
+   "humanName": "Waypoint Radius",
+   "documentation": "Distance from a waypoint, that when crossed indicates the wp has been reached.",
+   "Units": "m",
+   "UnitText": "meters",
+   "Range": "0.05 10.00",
+   "Increment": "0.01"
+  }
+ },
+ "absent": [
+  "ANGLE_MAX",
+  "ARMING_CHECK",
+  "CIRCLE_RADIUS",
+  "LAND_SPEED",
+  "LOIT_SPEED",
+  "PILOT_ACCEL_Z",
+  "PILOT_SPEED_DN",
+  "PILOT_SPEED_UP",
+  "RTL_ALT",
+  "RTL_CLIMB_MIN",
+  "RTL_SPEED",
+  "SYSID_THISMAV",
+  "WPNAV_RADIUS",
+  "WPNAV_SPEED"
+ ]
+}

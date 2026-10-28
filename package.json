@@ -1,0 +1,8 @@
+{
+  "name": "eecs195-param-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-only ArduPilot parameter checker for UCI EECS 195 flight checklists",
+  "scripts": { "test": "node tests/run-tests.js" },
+  "license": "MIT"
+}

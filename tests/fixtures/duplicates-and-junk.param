@@ -1,0 +1,6 @@
+ARMING_SKIPCHK,0
+RTL_ALT_M,2
+this line is garbage
+RTL_ALT_M,15
+FENCE_ENABLE,abc
+BATT_LOW_VOLT,6.1
