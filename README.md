@@ -2,11 +2,14 @@
 
 **Live site: <https://peterjburke.github.io/params/>**
 
-A single-page, browser-only tool for UCI EECS 195 / ECPS 295. Students load the
-`.param` file they saved from Mission Planner, pick the flight profile, and see
-each course requirement as PASS / FAIL / CONFLICT / MISSING / REVIEW with the raw
-parameter, its units, the normalized value and the expected value. Nothing is
-uploaded; the page works offline once loaded. Results export to CSV.
+A single-page, browser-only tool for UCI EECS 195 / ECPS 295. Students drop the
+`.param` file they saved from Mission Planner and get a big **GO** or **NO GO**
+for the ARC outdoor flight checklist, with a one-line reason for every item.
+Nothing is uploaded; the page works offline once loaded. Results export to CSV.
+
+The page checks the ARC profile only. The two cage profiles are still defined
+and tested in `checker.js` (see the table below) but have no UI, by the
+instructor's choice (2026-10-28: "simple go / no go, only ARC").
 
 | Profile | RTL altitude | Geofence | Pre-arm checks |
 |---|---|---|---|
