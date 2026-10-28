@@ -8,9 +8,12 @@ ARC outdoor flight checklist. The page is a copy of the original Fall 2025
 checker embedded in the course Google Site (saved verbatim in
 `docs/original-google-sites-checker-2026-10-28.html`): same title, drop zone,
 and five-column table (Parameter, Units, Your Value, Correct Value, Check) with
-the same eight rows, plus ArduCopter 4.6 / 4.7 name handling underneath.
-Before a file is loaded each row lists both names, e.g. `RTL_ALT_M / RTL_ALT`
-with `15 / 1500`; after loading, the row shows only the name found.
+the same eight rows, using **ArduCopter 4.7 parameter names only**
+(`ARMING_SKIPCHK`, `RTL_ALT_M`), as the footer states. A 4.6-style file shows
+"Not Found" for those two rows. The instructor chose this on 2026-10-28 ("do not
+have two versions, assume ArduPilot 4.7"). The 4.6 alias handling, unit
+conversion and conflict detection remain in `checker.js` and its tests but the
+page strips the 4.6 names before evaluating.
 Nothing is uploaded; the page works offline once loaded. Results export to CSV.
 
 The page checks the ARC profile only. The two cage profiles are still defined

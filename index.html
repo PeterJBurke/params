@@ -46,6 +46,8 @@ button:active { transform: translateY(1px); }
             </thead>
             <tbody id="tbody"></tbody>
         </table>
+
+        <p class="hint" style="margin-top:16px">Assumes ArduPilot Copter 4.7 parameter names.</p>
     </div>
 
     <script src="checker.js"></script>
@@ -53,10 +55,11 @@ button:active { transform: translateY(1px); }
 (function () {
     'use strict';
     var C = window.ParamChecker;
-    // Same eight rows as the original checker, in the same order.
+    // Same eight rows as the original checker, in the same order. ArduPilot 4.7 names.
     var ROWS = ['arming', 'batt_low', 'ek3_glitch', 'rtl_alt', 'fs_thr', 'fence_enable', 'fence_alt_max', 'fence_action'];
     var UNITS = { 'skip-bitmask': 'Bitmask', 'perform-bitmask': 'Bitmask', V: 'Volts', m: 'Meters', cm: 'Centimeters', 'enum': '-' };
     var BOOLEAN = { FENCE_ENABLE: 1 };
+    var OLD_NAMES = ['ARMING_CHECK', 'RTL_ALT', 'GPS_TYPE'];
     var reqs = {};
     C.REQUIREMENTS.forEach(function (r) { reqs[r.id] = r; });
 
@@ -77,8 +80,7 @@ button:active { transform: translateY(1px); }
         ROWS.forEach(function (id) {
             var req = reqs[id];
             var res = byId[id];
-            var aliases = req.aliases;
-            if (res && res.found.length) aliases = req.aliases.filter(function (a) { return res.found.indexOf(a.name) >= 0; });
+            var aliases = [req.aliases[0]]; // 4.7 name only
             var tr = document.createElement('tr');
             var names = aliases.map(function (a) { return a.name; }).join(' / ');
             var units = aliases.map(unitsFor).join(' / ');
@@ -91,7 +93,6 @@ button:active { transform: translateY(1px); }
             var pass = res && res.status === 'PASS';
             var cells = [[names, ''], [units, ''], [yours, yoursClass], [correct, ''], [pass ? '✔' : '❌', 'check-cell' + (res ? (pass ? ' pass' : ' fail') : '')]];
             cells.forEach(function (c) { var td = document.createElement('td'); td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td); });
-            if (res && res.status === 'CONFLICT') tr.title = 'Old and new parameter names disagree. Fix on the aircraft.';
             tbody.appendChild(tr);
         });
     }
@@ -107,6 +108,7 @@ button:active { transform: translateY(1px); }
         var reader = new FileReader();
         reader.onload = function (e) {
             var parsed = C.parse(e.target.result);
+            OLD_NAMES.forEach(function (n) { delete parsed.params[n]; }); // 4.7 only
             var result = C.evaluate(parsed, 'arc');
             result.params = parsed.params;
             var bad = ROWS.some(function (id) { return result.rows.filter(function (r) { return r.id === id; })[0].status !== 'PASS'; });
