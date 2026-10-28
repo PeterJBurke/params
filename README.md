@@ -4,7 +4,7 @@
 
 A single-page, browser-only tool for UCI EECS 195 / ECPS 295. Students drop the
 `.param` file they saved from Mission Planner and get a big **GO** or **NO GO**
-for the ARC outdoor flight checklist, with a one-line reason for every item.
+for the ARC outdoor flight checklist, in the original table layout (Requirement, Found parameter, Actual, Expected, Result).
 Nothing is uploaded; the page works offline once loaded. Results export to CSV.
 
 The page checks the ARC profile only. The two cage profiles are still defined
