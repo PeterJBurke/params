@@ -3,106 +3,132 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EECS 195 Parameter Check</title>
+<title>EECS 195 Drone Parameter Checker</title>
 <meta name="description" content="GO / NO GO check of a Mission Planner .param file against the EECS 195 ARC flight checklist. Runs in your browser, nothing is uploaded.">
 <style>
-*{box-sizing:border-box}
-body{font:17px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f4f7fa;color:#182b43}
-header{background:#003b71;color:#fff;padding:18px 16px;text-align:center}
-h1{margin:0;font-size:22px}
-header p{margin:4px 0 0;font-size:14px;opacity:.9}
-main{max-width:640px;margin:20px auto;padding:0 16px}
-#drop{background:#fff;border:3px dashed #92a7bb;border-radius:14px;padding:28px 16px;text-align:center}
+body{font:16px system-ui,sans-serif;margin:0;background:#f4f7fa;color:#182b43}
+header{background:#003b71;color:#fff;padding:25px max(20px,calc((100% - 900px)/2))}
+main{max-width:900px;margin:28px auto;padding:0 18px}
+.panel{background:#fff;border:1px solid #dce4ed;border-radius:12px;padding:22px;margin-bottom:20px}
+h1{margin:0;font-size:26px}
+h2{margin-top:0}
+input{font:inherit;padding:10px;border-radius:7px;border:1px solid #8a9aab}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #e3e8ef;vertical-align:top}
+th{background:#eff3f7}
+.pass{color:#126b3a;font-weight:bold}
+.fail{color:#b22b26;font-weight:bold}
+.small{font-size:13px;color:#52667a}
+.scroll{overflow-x:auto}
+.summary{font-size:20px;font-weight:bold;margin:0 0 12px}
+.summary.go{color:#126b3a}
+.summary.nogo{color:#b22b26}
+.summary .big{font-size:40px;display:block;letter-spacing:2px}
+code{white-space:nowrap}
+#drop{padding:25px;border:2px dashed #92a7bb;border-radius:9px;text-align:center}
 #drop.drag{background:#e2f1ff}
-#drop input{font:inherit;max-width:100%}
-#drop p{margin:10px 0 0;font-size:14px;color:#52667a}
-#verdict{display:none;margin:18px 0 0;padding:28px 16px;border-radius:14px;text-align:center;font-weight:800;font-size:56px;letter-spacing:2px}
-#verdict.go{display:block;background:#126b3a;color:#fff}
-#verdict.nogo{display:block;background:#b22b26;color:#fff}
-#verdict.err{display:block;background:#8a5900;color:#fff;font-size:22px}
-#verdict small{display:block;font-size:15px;font-weight:500;letter-spacing:0;margin-top:6px;opacity:.95}
-ul#items{list-style:none;padding:0;margin:14px 0 0}
-#items li{background:#fff;border:1px solid #dce4ed;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:start}
-#items .mark{font-size:22px;line-height:1;font-weight:800;text-align:center}
-#items .ok .mark{color:#126b3a}
-#items .bad .mark{color:#b22b26}
-#items b{display:block}
-#items span{font-size:14px;color:#52667a}
-#items .bad span{color:#7a1f1b}
-.foot{font-size:13px;color:#52667a;margin:18px 0 40px}
-.foot button{font:inherit;padding:8px 12px;border-radius:8px;border:0;background:#0064a4;color:#fff;cursor:pointer}
+tr.fail-row td{background:#fff7f6}
+tr.pass-row td{background:#f7fcf8}
 </style>
 </head>
 <body>
 <header>
-<h1>EECS 195 · ARC Flight Parameter Check</h1>
-<p>Mission Planner .param file · checked in your browser · nothing is uploaded</p>
+<h1>EECS 195 · Drone Parameter Checker</h1>
+<p>ARC outdoor flight · ArduPilot Copter 4.6 / 4.7 · Offline, browser-only validation</p>
 </header>
 <main>
+
+<section class="panel">
+<h2>1. Upload parameter file</h2>
 <div id="drop">
  <input id="file" type="file" accept=".param,.parm,.params,.txt">
- <p>Drop your .param file here or choose it.</p>
+ <p class="small">Drop a Mission Planner .param file here or choose a file. No data leaves your browser.</p>
 </div>
-<div id="verdict"></div>
-<ul id="items"></ul>
-<p class="foot" id="foot" hidden>
- <button id="export" type="button">Download CSV</button>
- &nbsp; This checks parameter values only. It cannot see firmware, wiring, calibration, battery or fence geometry. Do the physical preflight checklist. Works with ArduCopter 4.6 and 4.7 parameter names.
-</p>
+<p id="filename" class="small"></p>
+</section>
+
+<section class="panel">
+<h2>2. Results</h2>
+<p id="summary" class="summary">Choose a parameter file to begin. The table shows what the ARC checklist requires.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Requirement</th><th>Parameter</th><th>Expected</th><th>Actual</th><th>Result</th></tr></thead>
+<tbody id="results"></tbody>
+</table>
+</div>
+<p id="notes" class="small">Old (4.6) and new (4.7) parameter names are both accepted. RTL_ALT is in centimetres and is converted to metres. Missing parameters are not treated as zero. If both old and new names are present they must agree.</p>
+</section>
+
+<section class="panel">
+<h2>Safety notice</h2>
+<p>This tool checks selected configuration values, not airworthiness. It cannot confirm the installed firmware version, physical wiring, calibration quality, battery suitability, fence geometry, radio-failsafe behavior, or safe flight. Always verify settings on the aircraft and perform the course's physical preflight checks.</p>
+</section>
+
 </main>
 <script src="checker.js"></script>
 <script>
 'use strict';
 (function () {
   const C = window.ParamChecker, $ = (id) => document.getElementById(id);
+  const EMPTY = { params: {}, duplicates: [], unparsed: [], count: 0 };
+  const aliasesOf = {};
+  C.REQUIREMENTS.forEach((r) => { aliasesOf[r.id] = r.aliases.map((a) => a.name).join(' / '); });
   let result = null, fileName = '';
 
-  function show(text) {
-    let parsed;
-    try { parsed = C.parse(text); } catch (e) { parsed = null; }
-    const v = $('verdict'), ul = $('items');
-    ul.replaceChildren();
-    if (!parsed || parsed.count === 0) {
-      v.className = 'err'; v.textContent = 'Could not read any parameters from ' + fileName + '. Is it a Mission Planner .param file?';
-      $('foot').hidden = true; return;
-    }
-    result = C.evaluate(parsed, 'arc');
-    const bad = result.rows.filter((r) => r.status !== 'PASS');
-    v.className = bad.length ? 'nogo' : 'go';
-    v.textContent = bad.length ? 'NO GO' : 'GO';
-    const s = document.createElement('small');
-    s.textContent = bad.length ? bad.length + ' of ' + result.rows.length + ' checks failed · ' + fileName : 'All ' + result.rows.length + ' parameter checks pass · ' + fileName;
-    v.appendChild(s);
-    for (const r of result.rows) {
-      const li = document.createElement('li'); li.className = r.status === 'PASS' ? 'ok' : 'bad';
-      const m = document.createElement('div'); m.className = 'mark'; m.textContent = r.status === 'PASS' ? '✓' : '✗';
-      const d = document.createElement('div');
-      const b = document.createElement('b'); b.textContent = r.label; d.appendChild(b);
-      const sp = document.createElement('span');
-      const need = r.status === 'PASS' ? '' : ' Need ' + r.expected + '.';
-      const rawText = r.raw.map((x) => x.replace(/ \((perform|skip)-bitmask\)/, '')).join(', ');
-      if (r.status === 'MISSING') sp.textContent = 'Not in file.' + need;
-      else if (r.status === 'CONFLICT') sp.textContent = 'Old and new names disagree: ' + rawText + '.' + need + ' Fix on the aircraft.';
-      else if (r.id === 'arming') sp.textContent = rawText + ' (' + r.normalized + ').' + need;
-      else sp.textContent = rawText + (r.normalized && r.normalized !== r.raw[0].split(' = ')[1] ? ' = ' + r.normalized : '') + '.' + need;
-      d.appendChild(sp); li.appendChild(m); li.appendChild(d); ul.appendChild(li);
-    }
-    $('foot').hidden = false;
+  function cleanRaw(r) { return r.raw.map((x) => x.replace(/ \((perform|skip)-bitmask\)/, '')).join(' / '); }
+
+  function actualText(r) {
+    if (r.status === 'MISSING') return 'not in file';
+    if (r.status === 'CONFLICT') return cleanRaw(r) + ' (disagree)';
+    if (r.id === 'arming') return cleanRaw(r) + ' → ' + r.normalized;
+    const raw = cleanRaw(r);
+    return r.normalized && r.normalized !== r.raw[0].split(' = ')[1] ? raw + ' = ' + r.normalized : raw;
   }
 
-  async function load(f) { if (!f) return; fileName = f.name; show(await f.text()); }
+  function render(loaded) {
+    const rows = (loaded ? result : C.evaluate(EMPTY, 'arc')).rows;
+    const tbody = $('results'); tbody.replaceChildren();
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      const ok = r.status === 'PASS';
+      if (loaded) tr.className = ok ? 'pass-row' : 'fail-row';
+      const cells = [r.label, aliasesOf[r.id], r.expected, loaded ? actualText(r) : '—', loaded ? (ok ? 'PASS' : r.status) : '—'];
+      cells.forEach((v, i) => {
+        const td = document.createElement('td'); td.textContent = v;
+        if (i === 1) { const c = document.createElement('code'); c.textContent = v; td.replaceChildren(c); }
+        if (i === 4 && loaded) td.className = ok ? 'pass' : 'fail';
+        tr.appendChild(td);
+      });
+      if (r.note) tr.title = r.note + (r.detail ? ' ' + r.detail : '');
+      tbody.appendChild(tr);
+    }
+  }
+
+  function load(f) {
+    if (!f) return;
+    fileName = f.name;
+    f.text().then((text) => {
+      const parsed = C.parse(text);
+      $('filename').textContent = f.name + ' · ' + parsed.count + ' parsed parameters';
+      const s = $('summary');
+      if (parsed.count === 0) { s.className = 'summary nogo'; s.textContent = 'No parameters found in ' + f.name + '. Is it a Mission Planner .param file?'; return; }
+      result = C.evaluate(parsed, 'arc');
+      const bad = result.rows.filter((r) => r.status !== 'PASS').length;
+      s.className = 'summary ' + (bad ? 'nogo' : 'go');
+      s.replaceChildren();
+      const big = document.createElement('span'); big.className = 'big'; big.textContent = bad ? 'NO GO' : 'GO';
+      s.appendChild(big);
+      s.appendChild(document.createTextNode(bad ? bad + ' of ' + result.rows.length + ' checks failed' : 'All ' + result.rows.length + ' checks passed'));
+      render(true);
+    }).catch((e) => { $('summary').className = 'summary nogo'; $('summary').textContent = 'Unable to read file: ' + e.message; });
+  }
+
+  render(false);
   $('file').addEventListener('change', (e) => load(e.target.files[0]));
   const d = $('drop');
   d.addEventListener('dragover', (e) => { e.preventDefault(); d.classList.add('drag'); });
   d.addEventListener('dragleave', () => d.classList.remove('drag'));
   d.addEventListener('drop', (e) => { e.preventDefault(); d.classList.remove('drag'); load(e.dataTransfer.files[0]); });
-  $('export').addEventListener('click', () => {
-    if (!result) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([C.toCSV(result, fileName)], { type: 'text/csv' }));
-    a.download = 'eecs195-arc-' + fileName.replace(/\.[^.]+$/, '') + '.csv';
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  });
 })();
 </script>
 </body>
