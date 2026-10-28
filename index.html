@@ -1,13 +1,138 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EECS 195 Drone Parameter Checker</title><style>body{font:16px system-ui,sans-serif;margin:0;background:#f4f7fa;color:#182b43}header{background:#003b71;color:white;padding:25px max(20px,calc((100% - 900px)/2))}main{max-width:900px;margin:28px auto;padding:0 18px}.panel{background:white;border:1px solid #dce4ed;border-radius:12px;padding:22px;margin-bottom:20px}h1{margin:0;font-size:26px}h2{margin-top:0}input{font:inherit;padding:10px;border-radius:7px;border:1px solid #8a9aab}table{width:100%;border-collapse:collapse}th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #e3e8ef}th{background:#eff3f7}.pass{color:#126b3a;font-weight:bold}.fail{color:#b22b26;font-weight:bold}.small{font-size:13px;color:#52667a}.scroll{overflow-x:auto}.summary{font-size:20px;font-weight:bold}.go{color:#126b3a;font-size:44px}.nogo{color:#b22b26;font-size:44px}code{white-space:nowrap}#drop{padding:25px;border:2px dashed #92a7bb;border-radius:9px;text-align:center}#drop.drag{background:#e2f1ff}</style></head><body><header><h1>EECS 195 · Drone Parameter Checker</h1><p>ARC outdoor flight · ArduPilot Copter 4.6 / 4.7 · Offline, browser-only validation</p></header><main><section class="panel"><h2>1. Upload parameter file</h2><div id="drop"><input id="file" type="file" accept=".param,.txt,.parm,.params"><p class="small">Drop a Mission Planner .param file here or choose a file. No data leaves your browser.</p></div><p id="filename" class="small"></p></section><section class="panel"><h2>2. Results</h2><p id="summary" class="summary">Choose a parameter file to begin.</p><div class="scroll"><table><thead><tr><th>Requirement</th><th>Found parameter</th><th>Actual</th><th>Expected</th><th>Result</th></tr></thead><tbody id="results"></tbody></table></div></section><section class="panel"><h2>Safety notice</h2><p>This tool checks selected configuration values, not airworthiness. It cannot confirm the installed firmware version, physical wiring, calibration quality, battery suitability, fence geometry, radio-failsafe behavior, or safe flight. Always verify settings on the aircraft and perform the course's physical preflight checks.</p></section></main><script src="checker.js"></script><script>
-'use strict';
-(function(){
-const C=window.ParamChecker,$=id=>document.getElementById(id);
-const EXPECTED={arming:'All checks enabled',batt_low:'6.1 V',ek3_glitch:'0 m',rtl_alt:'15 m',fence_enable:'1',fence_alt_max:'25 m',fs_thr:'3 (Land)',fence_action:'2 (Land)',compass:'1',gps_auto:'0',gps_type:'1'};
-const names={};C.REQUIREMENTS.forEach(r=>{names[r.id]=r.aliases.map(a=>a.name).join(' / ');});
-function actual(r){if(!r.raw.length)return '—';return r.raw.map(x=>x.replace(/ \((perform|skip)-bitmask\)/,'').split(' = ')[1]).join(' / ');}
-function render(rows,loaded){const tbody=$('results');tbody.replaceChildren();for(const r of rows){const tr=document.createElement('tr');const vals=[r.label,loaded&&r.found.length?r.found.join(' / '):names[r.id],loaded?actual(r):'—',EXPECTED[r.id],loaded?r.status:'—'];vals.forEach((v,i)=>{const td=document.createElement('td');td.textContent=v;if(i===4&&loaded)td.className=r.status==='PASS'?'pass':'fail';tr.appendChild(td);});if(loaded&&(r.detail||r.note))tr.title=(r.detail+' '+r.note).trim();tbody.appendChild(tr);}}
-render(C.evaluate({params:{},duplicates:[],unparsed:[],count:0},'arc').rows,false);
-async function load(f){if(!f)return;try{const parsed=C.parse(await f.text());$('filename').textContent=`${f.name} · ${parsed.count} parsed parameters`;const res=C.evaluate(parsed,'arc');const bad=res.rows.some(r=>r.status!=='PASS');const s=$('summary');s.textContent=parsed.count?(bad?'NO GO':'GO'):'No parameters found';s.className='summary '+(bad||!parsed.count?'nogo':'go');render(res.rows,true);}catch(e){$('summary').textContent='Unable to read file: '+e.message;}}
-$('file').addEventListener('change',e=>load(e.target.files[0]));const d=$('drop');d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('drag')});d.addEventListener('dragleave',()=>d.classList.remove('drag'));d.addEventListener('drop',e=>{e.preventDefault();d.classList.remove('drag');load(e.dataTransfer.files[0])});
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>EECS 195 Parameter Checker</title>
+    <style>
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin: 24px; }
+.container { max-width: 800px; margin: 0 auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f5f5f5; }
+.value-cell { min-height: 2em; font-family: monospace; }
+.check-cell { text-align: center; font-size: 1.2em; font-weight: bold; }
+.pass { color: #28a745; }
+.fail { color: #dc3545; }
+.not-found { color: #666; font-style: italic; }
+#drop-zone { margin-top: 8px; padding: 20px; border: 2px dashed #bbb; border-radius: 8px; text-align: center; color: #666; transition: border-color .15s, background-color .15s; }
+#drop-zone.dragover { border-color: #0078d4; background: #f0f8ff; color: #003a6b; }
+#file-input { display: none; }
+.controls { display:flex; gap:8px; align-items:center; margin-top:8px; justify-content:center; }
+button { padding: 8px 12px; border-radius: 6px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+button:active { transform: translateY(1px); }
+.hint { color: #666; font-size: .9em; }
+#verdict { font-size: 2em; font-weight: bold; margin-top: 16px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EECS195 Parameter Checker</h1>
+
+        <div id="drop-zone" tabindex="0" aria-label="File drop area">
+            <p>Drag &amp; drop a file here or click "Choose file" to upload.</p>
+            <div class="controls">
+                <button type="button" id="choose-btn">Choose file</button>
+                <input id="file-input" type="file" accept=".param" aria-label="Choose file" />
+                <span class="hint" id="selected-file">No file chosen</span>
+            </div>
+        </div>
+
+        <div id="verdict"></div>
+
+        <table id="data-table" aria-label="Data table">
+            <thead>
+                <tr><th>Parameter</th><th>Units</th><th>Your Value</th><th>Correct Value</th><th>Check</th></tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+
+    <script src="checker.js"></script>
+    <script>
+(function () {
+    'use strict';
+    var C = window.ParamChecker;
+    // Same eight rows as the original checker, in the same order.
+    var ROWS = ['arming', 'batt_low', 'ek3_glitch', 'rtl_alt', 'fs_thr', 'fence_enable', 'fence_alt_max', 'fence_action'];
+    var UNITS = { 'skip-bitmask': 'Bitmask', 'perform-bitmask': 'Bitmask', V: 'Volts', m: 'Meters', cm: 'Centimeters', 'enum': '-' };
+    var BOOLEAN = { FENCE_ENABLE: 1 };
+    var reqs = {};
+    C.REQUIREMENTS.forEach(function (r) { reqs[r.id] = r; });
+
+    function correctFor(req, alias) {
+        var rule = req.profiles.arc;
+        if (req.kind === 'arming') return alias.name === 'ARMING_SKIPCHK' ? '0' : '1';
+        if (req.kind === 'enum') return String(rule.expect);
+        return String(+(rule.expect / (alias.factor || 1)).toFixed(6));
+    }
+    function unitsFor(alias) { return BOOLEAN[alias.name] ? 'Boolean' : (UNITS[alias.units] || alias.units); }
+    function num(v) { return Number.isInteger(v) ? String(v) : String(+v.toFixed(6)); }
+
+    function render(result) {
+        var tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+        var byId = {};
+        if (result) result.rows.forEach(function (r) { byId[r.id] = r; });
+        ROWS.forEach(function (id) {
+            var req = reqs[id];
+            var res = byId[id];
+            var aliases = req.aliases;
+            if (res && res.found.length) aliases = req.aliases.filter(function (a) { return res.found.indexOf(a.name) >= 0; });
+            var tr = document.createElement('tr');
+            var names = aliases.map(function (a) { return a.name; }).join(' / ');
+            var units = aliases.map(unitsFor).join(' / ');
+            var correct = aliases.map(function (a) { return correctFor(req, a); }).join(' / ');
+            var yours = '', yoursClass = 'value-cell';
+            if (res) {
+                if (res.found.length) yours = aliases.map(function (a) { return num(result.params[a.name]); }).join(' / ');
+                else { yours = 'Not Found'; yoursClass += ' not-found'; }
+            }
+            var pass = res && res.status === 'PASS';
+            var cells = [[names, ''], [units, ''], [yours, yoursClass], [correct, ''], [pass ? '✔' : '❌', 'check-cell' + (res ? (pass ? ' pass' : ' fail') : '')]];
+            cells.forEach(function (c) { var td = document.createElement('td'); td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td); });
+            if (res && res.status === 'CONFLICT') tr.title = 'Old and new parameter names disagree. Fix on the aircraft.';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function processFile(file) {
+        var label = document.getElementById('selected-file');
+        if (!file || !/\.param$/i.test(file.name)) {
+            alert('Invalid file type. Please upload a .param file.');
+            label.textContent = 'No file chosen';
+            return;
+        }
+        label.textContent = file.name;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var parsed = C.parse(e.target.result);
+            var result = C.evaluate(parsed, 'arc');
+            result.params = parsed.params;
+            var bad = ROWS.some(function (id) { return result.rows.filter(function (r) { return r.id === id; })[0].status !== 'PASS'; });
+            var v = document.getElementById('verdict');
+            v.textContent = bad ? 'NO GO' : 'GO';
+            v.className = bad ? 'fail' : 'pass';
+            render(result);
+        };
+        reader.onerror = function () { alert('Error reading the file.'); };
+        reader.readAsText(file);
+    }
+
+    var dropZone = document.getElementById('drop-zone');
+    var fileInput = document.getElementById('file-input');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
+        dropZone.addEventListener(evt, function (e) { e.preventDefault(); e.stopPropagation(); });
+    });
+    ['dragenter', 'dragover'].forEach(function (evt) { dropZone.addEventListener(evt, function () { dropZone.classList.add('dragover'); }); });
+    ['dragleave', 'drop'].forEach(function (evt) { dropZone.addEventListener(evt, function () { dropZone.classList.remove('dragover'); }); });
+    dropZone.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]); });
+    dropZone.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+    document.getElementById('choose-btn').addEventListener('click', function () { fileInput.click(); });
+    fileInput.addEventListener('change', function () { if (fileInput.files.length) processFile(fileInput.files[0]); });
+
+    render(null);
 })();
-</script></body></html>
+    </script>
+</body>
+</html>

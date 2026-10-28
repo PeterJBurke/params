@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>EECS 195 Parameter Checker</title>
+</head>
+<body>
+    <style>
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin: 24px; }
+.container { max-width: 800px; margin: 0 auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f5f5f5; }
+.value-cell { min-height: 2em; font-family: monospace; }
+.check-cell { 
+    text-align: center; 
+    font-size: 1.2em; 
+    font-weight: bold; 
+}
+.pass { color: #28a745; } /* Green for pass */
+.fail { color: #dc3545; } /* Red for fail */
+.not-found { color: #666; font-style: italic; }
+
+/* drop zone */
+#drop-zone {
+    margin-top: 8px;
+    padding: 20px;
+    border: 2px dashed #bbb;
+    border-radius: 8px;
+    text-align: center;
+    color: #666;
+    transition: border-color .15s, background-color .15s;
+}
+#drop-zone.dragover { border-color: #0078d4; background: #f0f8ff; color: #003a6b; }
+#file-input { display: none; }
+.controls { display:flex; gap:8px; align-items:center; margin-top:8px; }
+button { padding: 8px 12px; border-radius: 6px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+button:active { transform: translateY(1px); }
+.hint { color: #666; font-size: .9em; }
+    </style>
+    <div class="container">
+        <h1>EECS195 Parameter Checker</h1>
+
+        <div id="drop-zone" tabindex="0" aria-label="File drop area">
+            <p>Drag & drop a file here or click "Choose file" to upload.</p>
+            <div class="controls">
+                <label for="file-input" role="button">
+                    <button type="button" id="choose-btn">Choose file</button>
+                </label>
+                <input id="file-input" type="file" aria-label="Choose file" />
+                <span class="hint" id="selected-file">No file chosen</span>
+            </div>
+        </div>
+
+        <table id="data-table" aria-label="Data table">
+            <thead>
+                <tr><th>Parameter</th><th>Units</th><th>Your Value</th><th>Correct Value</th><th>Check</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>ARMING_CHECK</td><td>Boolean</td><td id="cell-1" class="value-cell" data-row="1"></td><td>1</td><td>❌</td></tr>
+                <tr><td>BATT_LOW_VOLT</td><td>Volts</td><td id="cell-2" class="value-cell" data-row="2"></td><td>6.1</td><td>❌</td></tr>
+                <tr><td>EK3_GLITCH_RAD</td><td>Meters</td><td id="cell-3" class="value-cell" data-row="3"></td><td>0</td><td>❌</td></tr>
+                <tr><td>RTL_ALT</td><td>Centimeters</td><td id="cell-4" class="value-cell" data-row="4"></td><td>1500</td><td>❌</td></tr>
+                <tr><td>FS_THR_ENABLE</td><td>-</td><td id="cell-5" class="value-cell" data-row="5"></td><td>3</td><td>❌</td></tr>
+                <tr><td>FENCE_ENABLE</td><td>Boolean</td><td id="cell-6" class="value-cell" data-row="6"></td><td>1</td><td>❌</td></tr>
+                <tr><td>FENCE_ALT_MAX</td><td>Meters</td><td id="cell-7" class="value-cell" data-row="7"></td><td>25</td><td>❌</td></tr>
+                <tr><td>FENCE_ACTION</td><td>-</td><td id="cell-8" class="value-cell" data-row="8"></td><td>2</td><td>❌</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function processFile(file) {
+    if (!file || !file.name.endsWith('.param')) {
+        alert('Invalid file type. Please upload a .param file.');
+        document.getElementById('selected-file').textContent = 'No file chosen';
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        const content = event.target.result;
+        const data = {};
+
+        const lines = content.split('\n');
+        for (const line of lines) {
+            if (line.trim() === '') continue;
+            const firstCommaIndex = line.indexOf(',');
+            if (firstCommaIndex === -1) continue;
+
+            const field = line.substring(0, firstCommaIndex).trim();
+            const value = line.substring(firstCommaIndex + 1).trim();
+
+            if (field) {
+                data[field] = value;
+            }
+        }
+
+        console.log('Parsed data:', data);
+
+        const tableRows = document.querySelectorAll('#data-table tbody tr');
+        
+        tableRows.forEach(row => {
+            const cells = row.getElementsByTagName('td');
+            if (cells.length < 4) return;
+
+            const paramName = cells[0].textContent;
+            const paramType = cells[1].textContent;
+            const valueCell = cells[2];
+            const correctValue = cells[3].textContent;
+            const checkCell = cells[4];
+
+            const userValue = data[paramName];
+
+            let isCorrect = false;
+            
+            valueCell.classList.remove('not-found');
+            checkCell.classList.remove('pass', 'fail');
+
+            if (userValue !== undefined) {
+                valueCell.textContent = userValue;
+                
+                isCorrect = (String(userValue) === String(correctValue));
+
+            } else {
+                valueCell.textContent = 'Not Found';
+                valueCell.classList.add('not-found');
+                isCorrect = false;
+            }
+
+            if (isCorrect) {
+                checkCell.textContent = '✔'; // Pass
+                checkCell.classList.add('pass');
+            } else {
+                checkCell.textContent = '❌'; // Fail
+                checkCell.classList.add('fail');
+            }
+        });
+    };
+
+    reader.onerror = function() {
+        alert('Error reading the file.');
+    };
+
+    reader.readAsText(file);
+}
+
+
+(function () {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const selectedFileLabel = document.getElementById('selected-file');
+    const chooseBtn = document.getElementById('choose-btn');
+
+    ['dragenter','dragover','dragleave','drop'].forEach(evt =>
+        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); })
+    );
+
+    ['dragenter','dragover'].forEach(evt =>
+        dropZone.addEventListener(evt, () => dropZone.classList.add('dragover'))
+    );
+    ['dragleave','drop'].forEach(evt =>
+        dropZone.addEventListener(evt, () => dropZone.classList.remove('dragover'))
+    );
+
+    dropZone.addEventListener('drop', e => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length) {
+            handleFiles(dt.files);
+        }
+    });
+
+    dropZone.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+
+    chooseBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', e => {
+        if (fileInput.files && fileInput.files.length) handleFiles(fileInput.files);
+    });
+
+    function handleFiles(fileList) {
+        const file = fileList[0];
+        selectedFileLabel.textContent = file ? file.name : 'No file chosen';
+        if (typeof processFile === 'function') {
+            processFile(file);
+        } else {
+            console.warn('processFile(file) not implemented. Received file:', file);
+        }
+    }
+
+    window.fillTableCell = function (rowIndex, htmlOrText) {
+        const el = document.getElementById('cell-' + (rowIndex|0));
+        if (!el) return false;
+        if (typeof htmlOrText === 'string' && /<[a-z][\s\S]*>/i.test(htmlOrText)) {
+            el.innerHTML = htmlOrText;
+        } else {
+            el.textContent = htmlOrText == null ? '' : String(htmlOrText);
+        }
+        return true;
+    };
+})();
+    </script>
+</body>
+</html>

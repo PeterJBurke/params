@@ -3,13 +3,24 @@
 **Live site: <https://peterjburke.github.io/params/>**
 
 A single-page, browser-only tool for UCI EECS 195 / ECPS 295. Students drop the
-`.param` file they saved from Mission Planner and get a big **GO** or **NO GO**
-for the ARC outdoor flight checklist, in the original table layout (Requirement, Found parameter, Actual, Expected, Result).
+`.param` file they saved from Mission Planner and get **GO** or **NO GO** for the
+ARC outdoor flight checklist. The page is a copy of the original Fall 2025
+checker embedded in the course Google Site (saved verbatim in
+`docs/original-google-sites-checker-2026-10-28.html`): same title, drop zone,
+and five-column table (Parameter, Units, Your Value, Correct Value, Check) with
+the same eight rows, plus ArduCopter 4.6 / 4.7 name handling underneath.
+Before a file is loaded each row lists both names, e.g. `RTL_ALT_M / RTL_ALT`
+with `15 / 1500`; after loading, the row shows only the name found.
 Nothing is uploaded; the page works offline once loaded. Results export to CSV.
 
 The page checks the ARC profile only. The two cage profiles are still defined
 and tested in `checker.js` (see the table below) but have no UI, by the
 instructor's choice (2026-10-28: "simple go / no go, only ARC").
+
+The three GPS/compass rows the handoff's prototype added (`COMPASS_ENABLE`,
+`GPS_AUTO_CONFIG`, `GPS1_TYPE`) are still checked in `checker.js` and its tests
+but are not shown on the page, to match the original. Add their ids
+(`compass`, `gps_auto`, `gps_type`) to the `ROWS` list in `index.html` to show them.
 
 | Profile | RTL altitude | Geofence | Pre-arm checks |
 |---|---|---|---|
